@@ -1,2 +1,2 @@
 # YOBJ_Bones_Object_Editor
-YOBJ Bones Object Editor adalah program yang berfungsi untuk mengubah atribut Object yang terkait dengan Bones. Saat ini hanya bekerja di sistem PSP
+YOBJ Bones Object Editor is a program that allows you to change the attributes of Objects related to Bones. Currently only works on PSP systems
