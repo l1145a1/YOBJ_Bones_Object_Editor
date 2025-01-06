@@ -1,4 +1,5 @@
 import struct
+import shutil
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
@@ -25,6 +26,26 @@ selected_bones = None
 view_stack = []
 
 # Functions
+# Fungsi membuat backup
+def backup_file(target_file):
+    """Membuat backup file dengan ekstensi .bak"""
+    try:
+        # Membuka file target untuk dibaca
+        with open(target_file, "r+b") as target_yobj:
+            # Menentukan nama file backup
+            backup_file = target_file + ".bak"
+
+            # Membuat file backup dan menyalin kontennya
+            with open(backup_file, "wb") as backup:
+                target_yobj.seek(0)  # Pastikan pointer di awal file
+                shutil.copyfileobj(target_yobj, backup)
+
+            print(f"Backup file berhasil dibuat: {backup_file}")
+            return True
+    except IOError as e:
+        print(f"Error saat membuat backup file: {e}")
+        return False
+
 def read_bones(f):
     global bones_count, read_bones_offset
     bones.clear()
@@ -98,6 +119,7 @@ def read_object_bones(f, input):
         print(f"Index {i}, Offset {offset}, Bone {bone} ({name})")
 
 def browse_file():
+    global file_path
     file_path = filedialog.askopenfilename(title="Select YOBJ File", filetypes=[("YOBJ files", "*.yobj"), ("All files", "*.*")])
     if not file_path:
         return
@@ -110,6 +132,7 @@ def browse_file():
             read_object(f)
 
         update_object_list()
+        view_mode.set("objects")
         messagebox.showinfo("Success", "File loaded successfully!")
     except Exception as e:
         messagebox.showerror("Error", f"Failed to read file: {e}")
@@ -148,9 +171,6 @@ def update_bones_list():
         name = bones_name[bone]
         object_list.insert(tk.END, f"Index {i}, Offset {offset}, Bone {bone} ({name})")
 
-# Tambahkan variabel global
-selected_bones = None  # Untuk melacak tulang yang dipilih dalam bones_view
-
 # Perbarui fungsi on_object_select
 def on_object_select(event):
     global selected_object, selected_object_bone, selected_bones
@@ -171,7 +191,8 @@ def on_object_select(event):
 # Perbarui fungsi on_double_click untuk mendukung bones_view
 # Fungsi untuk mengubah tulang pada objek
 def change_object_bones(f):
-    global selected_bones, object_bones, object_bones_offset
+    global selected_bones, object_bones, object_bones_offset, file_path
+    backup_file(file_path)
     if selected_bones is None:
         messagebox.showerror("Error", "No bone selected.")
         return
@@ -180,7 +201,6 @@ def change_object_bones(f):
         # Pindahkan ke offset tulang yang dipilih
         offset = object_bones_offset[selected_object_bone]
         f.seek(offset)
-        print(f.tell())
 
         # Ambil tulang baru dari selected_bones
         new_bone = selected_bones
@@ -189,7 +209,6 @@ def change_object_bones(f):
         f.write(struct.pack('<i', new_bone))
 
         # Perbarui data di memori
-        object_bones[selected_bones] = new_bone
         print(f"Updated Offset {offset} with Bone Index {new_bone} ({bones_name[new_bone]})")
         messagebox.showinfo("Success", "Bone changed successfully!")
     except Exception as e:
