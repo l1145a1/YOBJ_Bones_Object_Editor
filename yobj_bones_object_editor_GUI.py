@@ -157,7 +157,6 @@ def on_double_click(event):
     else:
         print("Already in bones view.")
 
-
 def update_object_list():
     object_list.delete(0, tk.END)
     for i, offset in enumerate(object_offset):
@@ -178,12 +177,18 @@ def on_object_select(event):
     if selected_index:
         if view_mode.get() == "objects":
             selected_object = selected_index[0]
+            selected_object_entry.delete(0, tk.END)  # Kosongkan isi textbox
+            selected_object_entry.insert(0, str(selected_object))  # Isi textbox
             print(f"Selected Object Index: {selected_object}")
         elif view_mode.get() == "bones":
             selected_object_bone = selected_index[0]
+            selected_object_bone_entry.delete(0, tk.END)  # Kosongkan isi textbox
+            selected_object_bone_entry.insert(0, str(selected_object_bone))  # Isi textbox
             print(f"Selected Bone Index: {selected_object_bone}")
         elif view_mode.get() == "bones_view":
             selected_bones = selected_index[0]
+            selected_bones_entry.delete(0, tk.END)  # Kosongkan isi textbox
+            selected_bones_entry.insert(0, str(selected_bones))  # Isi textbox
             print(f"Selected Bone View Index: {selected_bones}")
     else:
         print("No item selected.")
@@ -257,8 +262,40 @@ def update_bones_view():
             parrent_name = bones_name[parrent]
         object_list.insert(tk.END, f"Index {i}, Name {name}, Offset {offset}, Parent {parrent} ({parrent_name})")
 
-# Perbarui tombol "Switch to Objects" untuk menjadi tombol "Back"
+def save_inputs():
+    global selected_object, selected_object_bone, selected_bones
+    try:
+        # Ambil nilai dari textbox dan konversi ke integer
+        selected_object = int(selected_object_entry.get())
+        selected_object_bone = int(selected_object_bone_entry.get())
+        selected_bones = int(selected_bones_entry.get())
+
+        # Validasi apakah input valid
+        if selected_object < 0 or selected_object_bone < 0 or selected_bones < 0:
+            raise ValueError("Values must be non-negative integers.")
+
+        print(f"Selected Object: {selected_object}")
+        print(f"Selected Object Bone: {selected_object_bone}")
+        print(f"Selected Bones: {selected_bones}")
+        with open(file_path_var.get(), 'r+b') as f:
+            read_bones(f)
+            read_object_bones(f, selected_object)
+            change_object_bones(f)
+        # Perbarui tampilan setelah modifikasi
+        with open(file_path_var.get(), 'rb') as f:
+            read_object_bones(f, selected_object)
+        view_mode.set("bones")  # Kembali ke tampilan bones
+        update_bones_list()
+        print(f"Bone {selected_bones} updated. Returned to bones view.")
+    except ValueError as e:
+        messagebox.showerror("Error", f"Invalid input: {e}")
+
+# Perbarui tombol "Back" agar juga menghapus isi textbox
 def back():
+    selected_object_entry.delete(0, tk.END)
+    selected_object_bone_entry.delete(0, tk.END)
+    selected_bones_entry.delete(0, tk.END)
+
     if view_mode.get() == "bones_view":
         view_mode.set("bones")
         update_bones_list()
@@ -292,6 +329,26 @@ frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
 
 browse_button = tk.Button(frame, text="Browse YOBJ File", command=browse_file)
 browse_button.pack(pady=5)
+
+# Tambahkan textbox untuk input
+selected_object_label = tk.Label(frame, text="Selected Object:")
+selected_object_label.pack()
+selected_object_entry = tk.Entry(frame)
+selected_object_entry.pack()
+
+selected_object_bone_label = tk.Label(frame, text="Selected Object Bone:")
+selected_object_bone_label.pack()
+selected_object_bone_entry = tk.Entry(frame)
+selected_object_bone_entry.pack()
+
+selected_bones_label = tk.Label(frame, text="Selected Bones:")
+selected_bones_label.pack()
+selected_bones_entry = tk.Entry(frame)
+selected_bones_entry.pack()
+
+# Tombol untuk menyimpan input
+save_button = tk.Button(frame, text="Save Inputs", command=save_inputs)
+save_button.pack(pady=5)
 
 back_button = tk.Button(frame, text="Back", command=back)
 back_button.pack(pady=5)
